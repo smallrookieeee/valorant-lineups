@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!-- HTML5文档类型声明 -->
+<html lang="zh-CN">
+<!-- 设置语言为中文 -->
+<head>
+    <meta charset="utf-8">
+    <!-- 设置字符编码为UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 响应式设计视口设置 -->
+    <title>VALORANT 技能点位查询 - 首页</title>
+    <!-- 页面标题 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Tailwind CSS框架 -->
+    <style>
+        /* 瓦罗兰特暗色调风格背景 */
+        body { background-color: #0f1923; color: #ece8e1; }
+        /* 地图卡片样式 */
+        .map-card { 
+            background-color: #1f2326; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* 鼠标悬停：背景变红，卡片向上移动 */
+        .map-card:hover { 
+            background-color: #ff4655; 
+            transform: translateY(-8px);
+            border-color: #ff4655;
+        }
+    </style>
+</head>
+<!-- 页面主体 -->
+<body class="min-h-screen flex flex-col items-center p-8">
+
+    <!-- 页面头部 -->
+    <header class="text-center my-16">
+        <h1 class="text-6xl font-black italic text-white mb-4 uppercase tracking-tighter">VALORANT LINEUPS</h1>
+        <!-- 主标题 -->
+        <div class="h-1.5 w-32 bg-red-500 mx-auto"></div>
+        <!-- 装饰线 -->
+        <p class="mt-6 text-gray-400 text-sm tracking-[0.2em] uppercase font-bold">选择地图进行点位查询</p>
+        <!-- 副标题 -->
+    </header>
+
+    <!-- 地图列表容器 -->
+    <div id="map-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
+        <p id="tip" class="col-span-full text-center text-gray-500 animate-pulse">正在同步卫星导航数据...</p>
+        <!-- 加载提示 -->
+    </div>
+
+    <!-- 引入数据脚本 -->
+    <script src="data.js"></script>
+    <!-- 主脚本 -->
+    <script>
+        // 获取地图列表容器和提示元素
+        const mapList = document.getElementById('map-list');
+        const tip = document.getElementById('tip');
+
+        // 检查数据是否成功加载
+        if (typeof data === 'undefined' || !data.maps) {
+            // 如果数据未加载，显示错误提示
+            tip.innerText = '❌ 无法读取 data.js，请检查文件名或路径';
+            tip.className = "col-span-full text-center text-red-500 font-bold";
+        } else {
+            // 移除加载提示
+            tip.remove();
+            
+            // 循环遍历 data.js 里的每一张地图
+            data.maps.forEach(map => {
+                // 创建地图卡片元素
+                const card = document.createElement('div');
+                card.className = "map-card p-10 rounded-sm cursor-pointer group relative overflow-hidden";
+                
+                // 点击卡片：将选中的地图名存入临时缓存，并跳转页面
+                card.onclick = () => {
+                    sessionStorage.setItem('curMap', map.name);
+                    window.location.href = 'skill.html';
+                };
+
+                // 设置卡片HTML内容
+                card.innerHTML = `
+                    <div class="flex justify-between items-center relative z-10">
+                        <h2 class="text-3xl font-black uppercase group-hover:text-white">${map.name}</h2>
+                        <span class="text-red-500 group-hover:text-white text-2xl font-bold">→</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 group-hover:text-white/80 uppercase tracking-widest">
+                        已录入英雄: ${map.heroes.length}
+                    </p>
+                `;
+                // 将卡片添加到列表
+                mapList.appendChild(card);
+            });
+        }
+    </script>
+</body>
+<!-- 页面主体结束 -->
+</html>
+<!-- HTML文档结束 -->
