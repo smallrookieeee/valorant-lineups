@@ -73,6 +73,34 @@ const data = {
                             img_pos: "images/haven/attack/sova/a_4_pos.png",
                             img_aim: "images/haven/attack/sova/a_4_aim.png",
                             img_effect: "images/haven/attack/sova/a_4_eff.png"
+                        },
+                        {
+                            // 技能点位对象 5
+                            skill: "A外探测箭 1",
+                            type: "探测",
+                            side: "防守",
+                            power: "1格蓄力", 
+                            bounce: "0次反弹",
+                            pos: "正对箱子边缘，紧贴箱子",
+                            aim: "将两个菱形放在太阳上方",
+                            effect: "探测A外",
+                            img_pos: "images/haven/defense/sova/a_1_pos.png",
+                            img_aim: "images/haven/defense/sova/a_1_aim.png",
+                            img_effect: "images/haven/defense/sova/a_1_eff.png"
+                        },
+                        {
+                            // 技能点位对象 6
+                            skill: "C点回防探测箭 1",
+                            type: "探测",
+                            side: "防守",
+                            power: "2格蓄力", 
+                            bounce: "0次反弹",
+                            pos: "A大左侧角落",
+                            aim: "将右侧菱形对准图中所示位置，若朝右偏移则会落在C包点墙上",
+                            effect: "落在C大上方的树枝上，探测C包点",
+                            img_pos: "images/haven/defense/sova/c_1_pos.png",
+                            img_aim: "images/haven/defense/sova/c_1_aim.png",
+                            img_effect: "images/haven/defense/sova/c_1_eff.png"
                         }
                     ]
                 }

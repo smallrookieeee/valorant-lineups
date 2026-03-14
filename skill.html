@@ -56,9 +56,16 @@
             map.heroes.forEach((hero) => {
                 hero.skills.forEach((skillItem, index) => {
                     const card = document.createElement('div');
-                    card.className = "preview-card overflow-hidden shadow-lg border-b-2 border-red-500 skill-node";
                     
-                    // 设置数据属性供后续筛选对比
+                    // --- 新增：颜色区分逻辑 ---
+                    const isAttacker = skillItem.side === '进攻';
+                    // 进攻方用瓦红边框，防守方用青蓝边框
+                    const borderColor = isAttacker ? 'border-red-500' : 'border-blue-500';
+                    // 进攻方文字用红色，防守方用蓝色
+                    const tagTextColor = isAttacker ? 'text-red-400' : 'text-blue-500';
+                    
+                    card.className = `preview-card overflow-hidden shadow-lg border-b-4 ${borderColor} skill-node`;
+                    
                     card.setAttribute('data-side', skillItem.side);
                     card.setAttribute('data-type', skillItem.type);
 
@@ -69,13 +76,18 @@
                     };
 
                     card.innerHTML = `
-                        <div class="h-64 bg-black">
+                        <div class="h-64 bg-black relative">
                             <img src="${skillItem.img_effect}" class="w-full h-full object-cover opacity-80" onerror="this.src='https://via.placeholder.com/400x225/1a1e22/666?text=NO+IMAGE'">
+                            <span class="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${isAttacker ? 'bg-red-600/80' : 'bg-blue-600/80'} text-white">
+                                ${skillItem.side}
+                            </span>
                         </div>
                         <div class="p-3">
                             <div class="text-[9px] text-gray-500 font-bold uppercase">${hero.name}</div>
                             <div class="text-sm font-bold truncate text-white">${skillItem.skill}</div>
-                            <div class="mt-2 text-[10px] text-red-400 font-bold uppercase tracking-widest">${skillItem.side} | ${skillItem.type}</div>
+                            <div class="mt-2 text-[10px] ${tagTextColor} font-bold uppercase tracking-widest">
+                                ${skillItem.side} | ${skillItem.type}
+                            </div>
                         </div>
                     `;
 
