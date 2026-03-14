@@ -34,45 +34,45 @@
     <script src="data.js"></script>
     <!-- 主脚本 -->
     <script>
-        // 获取当前地图名称从sessionStorage
+        // 1) 从 sessionStorage 读取地图名（由 index.html 选择）
         const mapName = sessionStorage.getItem('curMap');
-        // 获取技能列表容器
+        // 2) 获取技能列表容器元素引用
         const list = document.getElementById('skill-list');
 
-        // 如果地图名称存在且数据加载
-        if (mapName && data.maps) {
-            // 查找当前地图数据
-            const map = data.maps.find(m => m.name === mapName);
-            // 设置页面标题
+        // 3) 如果有地图名且 data.js 数据有效，就渲染该地图下的技能卡片
+        if (mapName && Array.isArray(data.maps)) {
+            // 查找到当前地图对象
+            const map = data.maps.find((m) => m.name === mapName);
+            // 设置标题为当前地图名，增强可见性
             document.getElementById('map-title').innerText = mapName;
 
-            // 遍历地图中的英雄
-            map.heroes.forEach(hero => {
-                // 遍历英雄的技能
-                hero.skills.forEach((s, index) => {
-                    // 创建技能卡片元素
+            // 连续遍历英雄列表和技能列表
+            map.heroes.forEach((hero) => {
+                hero.skills.forEach((skillItem, index) => {
+                    // 创建单个技能卡片容器
                     const card = document.createElement('div');
                     card.className = "preview-card overflow-hidden shadow-lg border-b-2 border-red-500";
-                    
-                    // 点击跳转到新创建的详情页，并传递索引
+
+                    // 点击时保存当前英雄和技能索引，然后跳转详情页
                     card.onclick = () => {
                         sessionStorage.setItem('curHero', hero.name);
                         sessionStorage.setItem('curSkillIndex', index);
                         window.location.href = 'detail.html';
                     };
 
-                    // 设置卡片HTML内容
+                    // 每个卡片显示技能效果图、英雄名、技能名、类型和阵营标签
                     card.innerHTML = `
                         <div class="h-64 bg-black">
-                            <img src="${s.img_effect}" class="w-full h-full object-cover opacity-80">
+                            <img src="${skillItem.img_effect}" class="w-full h-full object-cover opacity-80">
                         </div>
                         <div class="p-3">
                             <div class="text-[9px] text-gray-500 font-bold uppercase">${hero.name}</div>
-                            <div class="text-sm font-bold truncate text-white">${s.skill}</div>
-                            <div class="mt-2 text-[10px] text-red-400 font-bold">${s.side} | ${s.type}</div>
+                            <div class="text-sm font-bold truncate text-white">${skillItem.skill}</div>
+                            <div class="mt-2 text-[10px] text-red-400 font-bold">${skillItem.side} | ${skillItem.type}</div>
                         </div>
                     `;
-                    // 将卡片添加到列表
+
+                    // 将卡片追加到页面
                     list.appendChild(card);
                 });
             });

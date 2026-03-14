@@ -19,45 +19,66 @@
 
     <script src="data.js"></script>
     <script>
+        // 1) 从 sessionStorage 读取导航上下文
         const mapName = sessionStorage.getItem('curMap');
         const heroName = sessionStorage.getItem('curHero');
         const skillIndex = sessionStorage.getItem('curSkillIndex');
+        // 2) 找到显示详情内容的容器
         const content = document.getElementById('detail-content');
 
+        // 3) 如果都有值则渲染详细信息
         if (mapName && heroName && skillIndex !== null) {
-            const map = data.maps.find(m => m.name === mapName);
-            const hero = map.heroes.find(h => h.name === heroName);
+            // 3.1 查找地图和英雄数据对象
+            const map = data.maps.find((m) => m.name === mapName);
+            const hero = map.heroes.find((h) => h.name === heroName);
+            // 3.2 使用索引选择当前技能
             const s = hero.skills[skillIndex];
 
+            // 4) 动态生成详细页面结构
+           // detail.html 逻辑部分
             content.innerHTML = `
                 <div class="mb-8">
                     <h1 class="text-3xl font-black italic uppercase text-white mb-2">${s.skill}</h1>
                     <p class="text-red-500 font-bold text-sm tracking-widest">${hero.name} · ${mapName} · ${s.side}</p>
                 </div>
 
-                <div class="space-y-8">
-                    <div class="detail-img-container relative rounded shadow-2xl overflow-hidden">
-                        <span class="img-label">1. 站位 (POSITION)</span>
-                        <img src="${s.img_pos}" class="w-full h-auto block" onclick="window.open(this.src)">
-                    </div>
-
-                    <div class="detail-img-container relative rounded shadow-2xl overflow-hidden">
-                        <span class="img-label">2. 瞄准 (AIM)</span>
-                        <img src="${s.img_aim}" class="w-full h-auto block" onclick="window.open(this.src)">
-                    </div>
-
-                    <div class="detail-img-container relative rounded shadow-2xl overflow-hidden">
-                        <span class="img-label">3. 效果 (EFFECT)</span>
-                        <img src="${s.img_effect}" class="w-full h-auto block" onclick="window.open(this.src)">
-                    </div>
-
-                    <div class="bg-[#1f2326] p-6 rounded border-l-4 border-red-500 mt-10">
-                        <h3 class="text-white font-bold mb-4 uppercase tracking-wider">执行说明</h3>
-                        <div class="space-y-4 text-gray-300">
-                            <p><span class="text-red-500 font-bold">📍 站位详情：</span>${s.pos}</p>
-                            <p><span class="text-red-500 font-bold">🎯 瞄准参考：</span>${s.aim}</p>
-                            <p class="pt-4 border-t border-gray-700 italic text-sm">" ${s.effect} "</p>
+                <div class="space-y-10">
+                    <div class="space-y-2 text-gray-300">
+                        <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
+                            <span class="img-label">1. 站位 (POSITION)</span>
+                            <img src="${s.img_pos}" class="w-full h-auto block">
                         </div>
+                        <p class="text-sm pl-2 border-l-2 border-gray-700">📍 ${s.pos}</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
+                            <span class="img-label">2. 瞄准 (AIM)</span>
+                            <img src="${s.img_aim}" class="w-full h-auto block">
+                        </div>
+                        
+                        <div class="flex gap-4 pl-2">
+                            <div class="bg-red-500/10 border border-red-500/50 px-3 py-1 rounded text-xs">
+                                <span class="text-red-500 font-bold italic">POWER:</span> 
+                                <span class="text-white ml-1 font-mono">${s.power || '即开'}</span>
+                            </div>
+                            <div class="bg-blue-500/10 border border-blue-500/50 px-3 py-1 rounded text-xs">
+                                <span class="text-blue-500 font-bold italic">BOUNCE:</span> 
+                                <span class="text-white ml-1 font-mono">${s.bounce || '0次'}</span>
+                            </div>
+                        </div>
+                        
+                        <p class="text-sm text-gray-400 pl-2 border-l-2 border-red-500/50">
+                            🎯 ${s.aim}
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 text-gray-300">
+                        <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
+                            <span class="img-label">3. 效果 (EFFECT)</span>
+                            <img src="${s.img_effect}" class="w-full h-auto block">
+                        </div>
+                        <p class="text-sm pl-2 border-l-2 border-gray-700 italic">✨ ${s.effect}</p>
                     </div>
                 </div>
             `;

@@ -51,22 +51,32 @@
     <script src="data.js"></script>
     <!-- 主脚本 -->
     <script>
-        // 获取地图列表容器和提示元素
+        // 1. 获取 DOM 元素引用
+        // mapList: 放置地图卡片的容器
         const mapList = document.getElementById('map-list');
+        // tip: 加载提示与错误提示
         const tip = document.getElementById('tip');
 
-        // 检查数据是否成功加载
-        if (typeof data === 'undefined' || !data.maps) {
-            // 如果数据未加载，显示错误提示
+        // 2. 数据完整性检查
+        // 如果 data.js 未正确加载，或者 data.maps 不是数组，则提示错误
+        if (typeof data === 'undefined' || !Array.isArray(data.maps)) {
             tip.innerText = '❌ 无法读取 data.js，请检查文件名或路径';
             tip.className = "col-span-full text-center text-red-500 font-bold";
         } else {
-            // 移除加载提示
+            // 3. 数据有效时，移除初始化提示
             tip.remove();
-            
-            // 循环遍历 data.js 里的每一张地图
+
+            // 4. 遍历每张地图并生成可点击卡片
+            // 遍历 data.js 里的每一张地图
             data.maps.forEach(map => {
-                // 创建地图卡片元素
+                // --- 新增逻辑：计算该地图下所有英雄的点位总数 ---
+                let totalSkills = 0;
+                map.heroes.forEach(hero => {
+                    // 将每个英雄名下的技能数量累加起来
+                    totalSkills += hero.skills.length;
+                });
+                // ------------------------------------------
+
                 const card = document.createElement('div');
                 card.className = "map-card p-10 rounded-sm cursor-pointer group relative overflow-hidden";
                 
@@ -76,17 +86,15 @@
                     window.location.href = 'skill.html';
                 };
 
-                // 设置卡片HTML内容
                 card.innerHTML = `
                     <div class="flex justify-between items-center relative z-10">
                         <h2 class="text-3xl font-black uppercase group-hover:text-white">${map.name}</h2>
                         <span class="text-red-500 group-hover:text-white text-2xl font-bold">→</span>
                     </div>
                     <p class="text-xs text-gray-500 mt-4 group-hover:text-white/80 uppercase tracking-widest">
-                        已录入英雄: ${map.heroes.length}
+                        已录入点位: ${totalSkills}
                     </p>
                 `;
-                // 将卡片添加到列表
                 mapList.appendChild(card);
             });
         }
