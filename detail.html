@@ -8,45 +8,79 @@
         body { background-color: #0f1923; color: #ece8e1; }
         .detail-img-container { background-color: #1a1e22; border: 1px solid #333; }
         .img-label { background: #ff4655; color: white; padding: 2px 10px; font-size: 12px; font-weight: bold; position: absolute; top: 0; left: 0; }
+        /* 底部导航按钮样式 */
+        .nav-btn { background-color: #1f2326; border: 1px solid #333; transition: 0.3s; }
+        .nav-btn:hover:not(:disabled) { background-color: #ff4655; border-color: #ff4655; color: white; }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body class="p-4 md:p-12 max-w-4xl mx-auto">
     
-    <button onclick="window.location.href='skill.html'" class="mb-6 text-xs border border-gray-600 px-4 py-2 uppercase font-bold text-gray-400 hover:text-white transition">← 返回列表</button>
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="window.location.href='skill.html'" class="text-xs border border-gray-600 px-4 py-2 uppercase font-bold text-gray-400 hover:text-white transition">← 返回列表</button>
+        
+        <div class="flex gap-2">
+            <button id="prev-btn-top" class="nav-btn px-3 py-1 text-xs rounded">PREV</button>
+            <button id="next-btn-top" class="nav-btn px-3 py-1 text-xs rounded">NEXT</button>
+        </div>
+    </div>
 
     <div id="detail-content">
         </div>
 
+    <div class="flex justify-between mt-12 pt-6 border-t border-gray-800">
+        <button id="prev-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-start">
+            <span class="text-[10px] opacity-50 uppercase">Previous Lineup</span>
+            <span id="prev-name">上一条</span>
+        </button>
+        <button id="next-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-end">
+            <span class="text-[10px] opacity-50 uppercase">Next Lineup</span>
+            <span id="next-name">下一条</span>
+        </button>
+    </div>
+
     <script src="data.js"></script>
     <script>
-        // 1) 从 sessionStorage 读取导航上下文
         const mapName = sessionStorage.getItem('curMap');
         const heroName = sessionStorage.getItem('curHero');
-        const skillIndex = sessionStorage.getItem('curSkillIndex');
-        // 2) 找到显示详情内容的容器
+        const skillIndex = parseInt(sessionStorage.getItem('curSkillIndex'));
         const content = document.getElementById('detail-content');
 
-        // 3) 如果都有值则渲染详细信息
-        if (mapName && heroName && skillIndex !== null) {
-            // 3.1 查找地图和英雄数据对象
-            const map = data.maps.find((m) => m.name === mapName);
-            const hero = map.heroes.find((h) => h.name === heroName);
-            // 3.2 使用索引选择当前技能
-            const s = hero.skills[skillIndex];
+        if (mapName && heroName && !isNaN(skillIndex)) {
+            const map = data.maps.find(m => m.name === mapName);
+            
+            // 1. 获取当前地图下所有的技能，并记录它们所属的英雄名
+            // 这样做是为了在切换时能跨英雄跳转
+            let allSkillsInMap = [];
+            map.heroes.forEach(hero => {
+                hero.skills.forEach((s, idx) => {
+                    allSkillsInMap.push({
+                        ...s,
+                        heroName: hero.name,
+                        originalIndex: idx
+                    });
+                });
+            });
 
-            // 4) 动态生成详细页面结构
-           // detail.html 逻辑部分
+            // 2. 找到当前技能在全地图数组中的索引位置
+            const currentFlatIndex = allSkillsInMap.findIndex(s => 
+                s.heroName === heroName && s.originalIndex === skillIndex
+            );
+
+            const s = allSkillsInMap[currentFlatIndex];
+
+            // 3. 渲染页面内容
             content.innerHTML = `
-                <div class="mb-8">
+                <div class="mb-8 text-center md:text-left">
                     <h1 class="text-3xl font-black italic uppercase text-white mb-2">${s.skill}</h1>
-                    <p class="text-red-500 font-bold text-sm tracking-widest">${hero.name} · ${mapName} · ${s.side}</p>
+                    <p class="text-red-500 font-bold text-sm tracking-widest">${s.heroName} · ${mapName} · ${s.side}</p>
                 </div>
 
                 <div class="space-y-10">
-                    <div class="space-y-2 text-gray-300">
+                    <div class="space-y-2">
                         <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
                             <span class="img-label">1. 站位 (POSITION)</span>
-                            <img src="${s.img_pos}" class="w-full h-auto block">
+                            <img src="${s.img_pos}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=POS+IMAGE+MISSING'">
                         </div>
                         <p class="text-sm pl-2 border-l-2 border-gray-700">📍 ${s.pos}</p>
                     </div>
@@ -54,9 +88,8 @@
                     <div class="space-y-3">
                         <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
                             <span class="img-label">2. 瞄准 (AIM)</span>
-                            <img src="${s.img_aim}" class="w-full h-auto block">
+                            <img src="${s.img_aim}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=AIM+IMAGE+MISSING'">
                         </div>
-                        
                         <div class="flex gap-4 pl-2">
                             <div class="bg-red-500/10 border border-red-500/50 px-3 py-1 rounded text-xs">
                                 <span class="text-red-500 font-bold italic">POWER:</span> 
@@ -67,21 +100,44 @@
                                 <span class="text-white ml-1 font-mono">${s.bounce || '0次'}</span>
                             </div>
                         </div>
-                        
-                        <p class="text-sm text-gray-400 pl-2 border-l-2 border-red-500/50">
-                            🎯 ${s.aim}
-                        </p>
+                        <p class="text-sm text-gray-400 pl-2 border-l-2 border-red-500/50">🎯 ${s.aim}</p>
                     </div>
 
-                    <div class="space-y-2 text-gray-300">
+                    <div class="space-y-2">
                         <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
                             <span class="img-label">3. 效果 (EFFECT)</span>
-                            <img src="${s.img_effect}" class="w-full h-auto block">
+                            <img src="${s.img_effect}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=EFFECT+IMAGE+MISSING'">
                         </div>
                         <p class="text-sm pl-2 border-l-2 border-gray-700 italic">✨ ${s.effect}</p>
                     </div>
                 </div>
             `;
+
+            // 4. 设置切换按钮逻辑
+            const setupNav = (btnId, targetIndex, nameId) => {
+                const btn = document.getElementById(btnId);
+                const nameEl = document.getElementById(nameId);
+                
+                if (targetIndex >= 0 && targetIndex < allSkillsInMap.length) {
+                    const targetSkill = allSkillsInMap[targetIndex];
+                    if (nameEl) nameEl.innerText = targetSkill.skill;
+                    
+                    btn.onclick = () => {
+                        sessionStorage.setItem('curHero', targetSkill.heroName);
+                        sessionStorage.setItem('curSkillIndex', targetSkill.originalIndex);
+                        window.location.reload(); // 刷新页面加载新点位
+                    };
+                } else {
+                    btn.disabled = true;
+                    if (nameEl) nameEl.innerText = "没有了";
+                }
+            };
+
+            // 应用到顶部和底部按钮
+            setupNav('prev-btn-top', currentFlatIndex - 1);
+            setupNav('next-btn-top', currentFlatIndex + 1);
+            setupNav('prev-btn-bottom', currentFlatIndex - 1, 'prev-name');
+            setupNav('next-btn-bottom', currentFlatIndex + 1, 'next-name');
         }
     </script>
 </body>

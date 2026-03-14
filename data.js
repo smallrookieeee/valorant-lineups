@@ -45,6 +45,34 @@ const data = {
                             img_pos: "images/haven/attack/sova/a_2_pos.png",
                             img_aim: "images/haven/attack/sova/a_2_aim.png",
                             img_effect: "images/haven/attack/sova/a_2_eff.png"
+                        },
+                        {
+                            // 技能点位对象 3
+                            skill: "A小探测箭 1",
+                            type: "探测",
+                            side: "进攻",
+                            power: "1格蓄力", 
+                            bounce: "0次反弹",
+                            pos: "A外台阶角落，需要上一层台阶",
+                            aim: "瞄准灯的正下方",
+                            effect: "探测A小",
+                            img_pos: "images/haven/attack/sova/a_3_pos.png",
+                            img_aim: "images/haven/attack/sova/a_3_aim.png",
+                            img_effect: "images/haven/attack/sova/a_3_eff.png"
+                        },
+                        {
+                            // 技能点位对象 4
+                            skill: "A包探测箭 1",
+                            type: "探测",
+                            side: "进攻",
+                            power: "满格蓄力", 
+                            bounce: "1次反弹",
+                            pos: "A大左侧花坛上",
+                            aim: "瞄准花篮右下方的花的左上角",
+                            effect: "探测A包点",
+                            img_pos: "images/haven/attack/sova/a_4_pos.png",
+                            img_aim: "images/haven/attack/sova/a_4_aim.png",
+                            img_effect: "images/haven/attack/sova/a_4_eff.png"
                         }
                     ]
                 }

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORANT 点位数据生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f1923; color: #ece8e1; }
+        input, textarea, select { background-color: #1f2326 !important; border: 1px solid #333 !important; color: white !important; }
+        .btn-valorant { background-color: #ff4655; transition: 0.3s; }
+        .btn-valorant:hover { background-color: #ff5e6a; transform: translateY(-2px); }
+    </style>
+</head>
+<body class="p-6 md:p-12 max-w-5xl mx-auto">
+    <header class="mb-10 border-b border-gray-800 pb-6">
+        <h1 class="text-3xl font-black italic uppercase text-white">Lineup Data Factory</h1>
+        <p class="text-gray-500 text-xs mt-2 uppercase tracking-widest">录入点位数据，自动生成 JS 代码块</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <form id="lineupForm" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">技能名称</label>
+                    <input type="text" id="skill" placeholder="例：A包点深处探测箭" class="w-full p-2 rounded focus:outline-none focus:border-red-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">类型 (Type)</label>
+                    <select id="type" class="w-full p-2 rounded focus:outline-none text-sm">
+                        <option value="探测">探测</option>
+                        <option value="电击">电击</option>
+                        <option value="烟雾">烟雾</option>
+                        <option value="墙体">墙体</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">阵营 (Side)</label>
+                    <select id="side" class="w-full p-2 rounded focus:outline-none text-sm">
+                        <option value="进攻">进攻</option>
+                        <option value="防守">防守</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">蓄力 (Power)</label>
+                    <input type="text" id="power" placeholder="例：2格" class="w-full p-2 rounded text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">弹跳 (Bounce)</label>
+                    <input type="text" id="bounce" placeholder="例：1次" class="w-full p-2 rounded text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">站位描述 (Position Info)</label>
+                <textarea id="pos" rows="2" placeholder="描述玩家站在哪..." class="w-full p-2 rounded text-sm"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">瞄准描述 (Aiming Info)</label>
+                <textarea id="aim" rows="2" placeholder="描述准星瞄准哪..." class="w-full p-2 rounded text-sm"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">最终效果 (Effect)</label>
+                <textarea id="effect" rows="2" placeholder="描述技能落点的效果..." class="w-full p-2 rounded text-sm"></textarea>
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-gray-800">
+                <h3 class="text-xs font-bold text-red-500 uppercase">图片路径设置 (需放在 images/ 文件夹)</h3>
+                <input type="text" id="img_pos" placeholder="站位图片名 (例：haven_sova_a_pos.jpg)" class="w-full p-2 rounded text-xs font-mono">
+                <input type="text" id="img_aim" placeholder="瞄准图片名 (例：haven_sova_a_aim.jpg)" class="w-full p-2 rounded text-xs font-mono">
+                <input type="text" id="img_eff" placeholder="效果图片名 (例：haven_sova_a_eff.jpg)" class="w-full p-2 rounded text-xs font-mono">
+            </div>
+
+            <button type="button" onclick="generateCode()" class="w-full btn-valorant py-4 font-black italic uppercase tracking-widest text-white mt-6 shadow-lg">
+                Generate Code Block
+            </button>
+        </form>
+
+        <div class="flex flex-col h-full">
+            <label class="block text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest text-right">Resulting Code (Copy This)</label>
+            <div class="relative flex-grow">
+                <textarea id="resultCode" readonly class="w-full h-full min-h-[400px] bg-black p-6 rounded font-mono text-xs text-green-400 border border-gray-800 outline-none leading-relaxed"></textarea>
+                <button onclick="copyToClipboard()" class="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 rounded text-[10px] hover:bg-gray-700">COPY</button>
+            </div>
+            <p class="text-[10px] text-gray-600 mt-4 leading-relaxed italic">
+                * 提示：生成的代码已经包含末尾逗号，直接粘贴进 data.js 对应英雄的 skills: [ ] 数组中即可。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function generateCode() {
+            // 获取所有输入值
+            const dataObj = {
+                skill: document.getElementById('skill').value || "未命名点位",
+                type: document.getElementById('type').value,
+                side: document.getElementById('side').value,
+                power: document.getElementById('power').value || "即开",
+                bounce: document.getElementById('bounce').value || "0次",
+                pos: document.getElementById('pos').value || "暂无站位描述",
+                aim: document.getElementById('aim').value || "暂无瞄准描述",
+                effect: document.getElementById('effect').value || "暂无效果描述",
+                img_pos: "images/" + (document.getElementById('img_pos').value || "placeholder.jpg"),
+                img_aim: "images/" + (document.getElementById('img_aim').value || "placeholder.jpg"),
+                img_effect: "images/" + (document.getElementById('img_eff').value || "placeholder.jpg")
+            };
+
+            // 转化为漂亮格式的 JSON
+            const jsonStr = JSON.stringify(dataObj, null, 4);
+            // 加上逗号显示
+            document.getElementById('resultCode').value = jsonStr + ",";
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("resultCode");
+            copyText.select();
+            document.execCommand("copy");
+            alert("代码已复制！现在去 data.js 粘贴吧。");
+        }
+    </script>
+</body>
+</html>
