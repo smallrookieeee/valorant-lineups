@@ -3,125 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VALORANT 点位数据生成器</title>
+    <title>VALORANT 点位数据生产线</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f1923; color: #ece8e1; }
-        input, textarea, select { background-color: #1f2326 !important; border: 1px solid #333 !important; color: white !important; }
+        input, textarea, select { 
+            background-color: #1a1e22 !important; 
+            border: 1px solid #333 !important; 
+            color: white !important; 
+            transition: all 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #ff4655 !important;
+            outline: none;
+            box-shadow: 0 0 0 1px #ff4655;
+        }
         .btn-valorant { background-color: #ff4655; transition: 0.3s; }
-        .btn-valorant:hover { background-color: #ff5e6a; transform: translateY(-2px); }
+        .btn-valorant:hover { background-color: #ff5e6a; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 70, 85, 0.3); }
+        .section-title { position: relative; padding-left: 12px; margin-bottom: 16px; font-weight: 900; font-style: italic; text-transform: uppercase; color: #fff; }
+        .section-title::before { content: ''; position: absolute; left: 0; top: 10%; height: 80%; width: 4px; background-color: #ff4655; }
+        
+        /* 秒杀箭专属动画 */
+        .double-dart-panel { transition: all 0.3s ease-in-out; }
     </style>
 </head>
-<body class="p-6 md:p-12 max-w-5xl mx-auto">
-    <header class="mb-10 border-b border-gray-800 pb-6">
-        <h1 class="text-3xl font-black italic uppercase text-white">Lineup Data Factory</h1>
-        <p class="text-gray-500 text-xs mt-2 uppercase tracking-widest">录入点位数据，自动生成 JS 代码块</p>
+<body class="p-6 md:p-10 max-w-6xl mx-auto">
+    <header class="mb-8 border-b border-gray-800 pb-4 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black italic uppercase text-white">Lineup Data Factory</h1>
+            <p class="text-gray-500 text-xs mt-1 uppercase tracking-widest">支持双电击箭 (秒杀阵) 动态录入面板</p>
+        </div>
+        <button onclick="clearForm()" class="text-xs text-gray-400 hover:text-white underline uppercase">清空表单 (Clear)</button>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <form id="lineupForm" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">技能名称</label>
-                    <input type="text" id="skill" placeholder="例：A包点深处探测箭" class="w-full p-2 rounded focus:outline-none focus:border-red-500 text-sm">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <form id="lineupForm" class="lg:col-span-7 space-y-8">
+            
+            <div class="bg-black/20 p-5 rounded border border-white/5 space-y-4">
+                <h2 class="section-title">1. 基础参数 (Base Stats)</h2>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">技能名称</label>
+                        <input type="text" id="skill" placeholder="例：A包点秒杀箭" class="w-full p-2 rounded text-sm input-save">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">阵营 (Side)</label>
+                        <select id="side" class="w-full p-2 rounded text-sm input-save">
+                            <option value="进攻">进攻</option>
+                            <option value="防守">防守</option>
+                        </select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-[10px] font-bold text-red-500 mb-1 uppercase">类型 (Type)</label>
+                        <select id="type" class="w-full p-2 rounded text-sm border-red-500/50 input-save" onchange="toggleDoubleDart()">
+                            <option value="探测">探测 (单箭)</option>
+                            <option value="秒杀箭">秒杀箭 (双箭)</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">类型 (Type)</label>
-                    <select id="type" class="w-full p-2 rounded focus:outline-none text-sm">
-                        <option value="探测">探测</option>
-                        <option value="电击">电击</option>
-                        <option value="烟雾">烟雾</option>
-                        <option value="墙体">墙体</option>
-                        <option value="其他">其他</option>
-                    </select>
+
+                <div class="grid grid-cols-2 gap-4 border-l-2 border-red-500 pl-3">
+                    <div>
+                        <label id="label-power1" class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">蓄力 (Power)</label>
+                        <select id="power" class="w-full p-2 rounded text-sm input-save">
+                            <option value="0格蓄力">0格蓄力</option>
+                            <option value="一格蓄力">一格蓄力</option>
+                            <option value="两格蓄力">两格蓄力</option>
+                            <option value="满格蓄力">满格蓄力</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label id="label-bounce1" class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">弹跳 (Bounce)</label>
+                        <select id="bounce" class="w-full p-2 rounded text-sm input-save">
+                            <option value="0次反弹">0次反弹</option>
+                            <option value="一次反弹">一次反弹</option>
+                            <option value="两次反弹">两次反弹</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="panel-arrow2" class="grid grid-cols-2 gap-4 border-l-2 border-blue-500 pl-3 hidden double-dart-panel mt-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-blue-400 mb-1 uppercase">第二箭 蓄力 (Power 2)</label>
+                        <select id="power2" class="w-full p-2 rounded text-sm input-save">
+                            <option value="0格蓄力">0格蓄力</option>
+                            <option value="一格蓄力">一格蓄力</option>
+                            <option value="两格蓄力">两格蓄力</option>
+                            <option value="满格蓄力">满格蓄力</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-blue-400 mb-1 uppercase">第二箭 弹跳 (Bounce 2)</label>
+                        <select id="bounce2" class="w-full p-2 rounded text-sm input-save">
+                            <option value="0次反弹">0次反弹</option>
+                            <option value="一次反弹">一次反弹</option>
+                            <option value="两次反弹">两次反弹</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">阵营 (Side)</label>
-                    <select id="side" class="w-full p-2 rounded focus:outline-none text-sm">
-                        <option value="进攻">进攻</option>
-                        <option value="防守">防守</option>
-                    </select>
+            <div class="bg-black/20 p-5 rounded border border-white/5">
+                <h2 class="section-title">2. 执行描述 (Execution Info)</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">站位描述 (Pos)</label>
+                        <textarea id="pos" rows="2" placeholder="例：A外箱子角落..." class="w-full p-2 rounded text-sm input-save"></textarea>
+                    </div>
+                    <div>
+                        <label id="label-aim1" class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">瞄准描述 (Aim)</label>
+                        <textarea id="aim" rows="2" placeholder="第一箭对准哪里..." class="w-full p-2 rounded text-sm input-save"></textarea>
+                    </div>
+                    
+                    <div id="panel-aim2" class="hidden double-dart-panel border-l-2 border-blue-500 pl-3">
+                        <label class="block text-[10px] font-bold text-blue-400 mb-1 uppercase">第二箭 瞄准描述 (Aim 2)</label>
+                        <textarea id="aim2" rows="2" placeholder="发射第一箭后，第二箭对准哪里..." class="w-full p-2 rounded text-sm input-save"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">最终效果 (Effect)</label>
+                        <textarea id="effect" rows="2" placeholder="例：清空A包点死角..." class="w-full p-2 rounded text-sm input-save"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">蓄力 (Power)</label>
-                    <input type="text" id="power" placeholder="例：2格" class="w-full p-2 rounded text-sm">
+            </div>
+
+            <div class="bg-black/20 p-5 rounded border border-white/5">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="section-title mb-0">3. 图像配置 (Images)</h2>
+                    <button type="button" onclick="autoFillImages()" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1 rounded font-bold uppercase transition">一键生成路径</button>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">弹跳 (Bounce)</label>
-                    <input type="text" id="bounce" placeholder="例：1次" class="w-full p-2 rounded text-sm">
+                
+                <div class="grid grid-cols-2 gap-4 mb-4 p-3 bg-black/40 rounded border border-gray-700">
+                    <div>
+                        <label class="block text-[10px] font-bold text-blue-400 mb-1">存放目录 (Folder Path)</label>
+                        <input type="text" id="img_folder" placeholder="例: images/haven/attack/sova/" class="w-full p-2 rounded text-xs font-mono input-save">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-blue-400 mb-1">文件前缀 (Prefix)</label>
+                        <input type="text" id="img_prefix" placeholder="例: a_1" class="w-full p-2 rounded text-xs font-mono input-save">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <input type="text" id="img_pos" placeholder="站位图路径" class="w-full p-2 rounded text-xs font-mono text-gray-400 input-save">
+                    <input type="text" id="img_aim" placeholder="第一箭 瞄准图路径" class="w-full p-2 rounded text-xs font-mono text-gray-400 input-save">
+                    <input type="text" id="img_aim2" placeholder="第二箭 瞄准图路径 (aim2.png)" class="w-full p-2 rounded text-xs font-mono text-blue-400 border-blue-500/50 hidden double-dart-panel input-save">
+                    <input type="text" id="img_eff" placeholder="效果图路径" class="w-full p-2 rounded text-xs font-mono text-gray-400 input-save">
                 </div>
             </div>
 
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">站位描述 (Position Info)</label>
-                <textarea id="pos" rows="2" placeholder="描述玩家站在哪..." class="w-full p-2 rounded text-sm"></textarea>
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">瞄准描述 (Aiming Info)</label>
-                <textarea id="aim" rows="2" placeholder="描述准星瞄准哪..." class="w-full p-2 rounded text-sm"></textarea>
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">最终效果 (Effect)</label>
-                <textarea id="effect" rows="2" placeholder="描述技能落点的效果..." class="w-full p-2 rounded text-sm"></textarea>
-            </div>
-
-            <div class="space-y-3 pt-4 border-t border-gray-800">
-                <h3 class="text-xs font-bold text-red-500 uppercase">图片路径设置 (需放在 images/ 文件夹)</h3>
-                <input type="text" id="img_pos" placeholder="站位图片名 (例：haven_sova_a_pos.jpg)" class="w-full p-2 rounded text-xs font-mono">
-                <input type="text" id="img_aim" placeholder="瞄准图片名 (例：haven_sova_a_aim.jpg)" class="w-full p-2 rounded text-xs font-mono">
-                <input type="text" id="img_eff" placeholder="效果图片名 (例：haven_sova_a_eff.jpg)" class="w-full p-2 rounded text-xs font-mono">
-            </div>
-
-            <button type="button" onclick="generateCode()" class="w-full btn-valorant py-4 font-black italic uppercase tracking-widest text-white mt-6 shadow-lg">
-                Generate Code Block
+            <button type="button" onclick="generateCode()" class="w-full btn-valorant py-4 font-black italic uppercase tracking-widest text-white shadow-lg rounded">
+                Generate JSON Code
             </button>
         </form>
 
-        <div class="flex flex-col h-full">
-            <label class="block text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest text-right">Resulting Code (Copy This)</label>
-            <div class="relative flex-grow">
-                <textarea id="resultCode" readonly class="w-full h-full min-h-[400px] bg-black p-6 rounded font-mono text-xs text-green-400 border border-gray-800 outline-none leading-relaxed"></textarea>
-                <button onclick="copyToClipboard()" class="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 rounded text-[10px] hover:bg-gray-700">COPY</button>
+        <div class="lg:col-span-5 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Resulting Code</label>
+                <span id="copy-tip" class="text-[10px] text-green-400 font-bold opacity-0 transition-opacity">已复制到剪贴板!</span>
             </div>
-            <p class="text-[10px] text-gray-600 mt-4 leading-relaxed italic">
-                * 提示：生成的代码已经包含末尾逗号，直接粘贴进 data.js 对应英雄的 skills: [ ] 数组中即可。
-            </p>
+            
+            <div class="relative flex-grow">
+                <textarea id="resultCode" readonly class="w-full h-full min-h-[500px] bg-[#0a0f14] p-5 rounded font-mono text-xs text-green-400 border border-gray-800 outline-none leading-relaxed shadow-inner"></textarea>
+                <button onclick="copyToClipboard()" class="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded text-[10px] font-bold uppercase hover:bg-gray-700 transition">COPY</button>
+            </div>
         </div>
     </div>
 
     <script>
+        const inputs = document.querySelectorAll('.input-save');
+        
+        window.onload = () => {
+            inputs.forEach(input => {
+                const savedValue = localStorage.getItem('draft_' + input.id);
+                if (savedValue && input.tagName !== 'BUTTON') {
+                    input.value = savedValue;
+                }
+                input.addEventListener('input', () => {
+                    localStorage.setItem('draft_' + input.id, input.value);
+                });
+            });
+            // 页面加载完成后，检查一次当前选择的类型，决定是否展开第二箭面板
+            toggleDoubleDart();
+        };
+
+        // 【核心交互】切换秒杀箭与探测箭的 UI 面板
+        function toggleDoubleDart() {
+            const isDouble = document.getElementById('type').value === '秒杀箭';
+            
+            // 控制第二箭相关的 Div 显隐
+            document.getElementById('panel-arrow2').classList.toggle('hidden', !isDouble);
+            document.getElementById('panel-aim2').classList.toggle('hidden', !isDouble);
+            document.getElementById('img_aim2').classList.toggle('hidden', !isDouble);
+
+            // 修改第一箭的 Label 提示文字
+            document.getElementById('label-power1').innerText = isDouble ? '第一箭 蓄力 (Power 1)' : '蓄力 (Power)';
+            document.getElementById('label-bounce1').innerText = isDouble ? '第一箭 弹跳 (Bounce 1)' : '弹跳 (Bounce)';
+            document.getElementById('label-aim1').innerText = isDouble ? '第一箭 瞄准描述 (Aim 1)' : '瞄准描述 (Aim)';
+        }
+
+        function clearForm() {
+            if(confirm('确定要清空当前所有内容吗？')) {
+                document.querySelectorAll('input[type="text"], textarea').forEach(input => {
+                    // 仅清空非目录前缀的输入框，保留路径记忆
+                    if(input.id !== 'img_folder') {
+                        input.value = '';
+                        localStorage.removeItem('draft_' + input.id);
+                    }
+                });
+                document.getElementById('resultCode').value = '';
+                
+                document.getElementById('side').value = '进攻';
+                document.getElementById('type').value = '探测';
+                document.getElementById('power').value = '0格蓄力';
+                document.getElementById('bounce').value = '0次反弹';
+                document.getElementById('power2').value = '0格蓄力';
+                document.getElementById('bounce2').value = '0次反弹';
+                
+                toggleDoubleDart(); // 重置后折叠面板
+            }
+        }
+
+        function autoFillImages() {
+            let folder = document.getElementById('img_folder').value.trim();
+            const prefix = document.getElementById('img_prefix').value.trim();
+            const isDouble = document.getElementById('type').value === '秒杀箭';
+            
+            if (!folder || !prefix) {
+                alert("请先填写【存放目录】和【文件前缀】！");
+                return;
+            }
+
+            if (!folder.endsWith('/')) folder += '/';
+
+            document.getElementById('img_pos').value = `${folder}${prefix}_pos.png`;
+            document.getElementById('img_aim').value = `${folder}${prefix}_aim.png`;
+            document.getElementById('img_eff').value = `${folder}${prefix}_eff.png`;
+            
+            // 如果是秒杀箭，额外生成第二张瞄准图的路径
+            if (isDouble) {
+                document.getElementById('img_aim2').value = `${folder}${prefix}_aim2.png`;
+            }
+
+            inputs.forEach(input => {
+                localStorage.setItem('draft_' + input.id, input.value);
+            });
+        }
+
         function generateCode() {
-            // 获取所有输入值
+            const isDouble = document.getElementById('type').value === '秒杀箭';
+            
+            // 基础结构
             const dataObj = {
-                skill: document.getElementById('skill').value || "未命名点位",
+                skill: document.getElementById('skill').value || "未命名技能",
                 type: document.getElementById('type').value,
                 side: document.getElementById('side').value,
-                power: document.getElementById('power').value || "即开",
-                bounce: document.getElementById('bounce').value || "0次",
-                pos: document.getElementById('pos').value || "暂无站位描述",
-                aim: document.getElementById('aim').value || "暂无瞄准描述",
-                effect: document.getElementById('effect').value || "暂无效果描述",
-                img_pos: "images/" + (document.getElementById('img_pos').value || "placeholder.jpg"),
-                img_aim: "images/" + (document.getElementById('img_aim').value || "placeholder.jpg"),
-                img_effect: "images/" + (document.getElementById('img_eff').value || "placeholder.jpg")
+                power: document.getElementById('power').value,
+                bounce: document.getElementById('bounce').value,
+                pos: document.getElementById('pos').value || "无描述",
+                aim: document.getElementById('aim').value || "无描述",
             };
 
-            // 转化为漂亮格式的 JSON
+            // 如果是秒杀箭，插入第二箭的数据
+            if (isDouble) {
+                dataObj.power2 = document.getElementById('power2').value;
+                dataObj.bounce2 = document.getElementById('bounce2').value;
+                dataObj.aim2 = document.getElementById('aim2').value || "无描述";
+            }
+
+            // 接上末尾结构
+            dataObj.effect = document.getElementById('effect').value || "无描述";
+            dataObj.img_pos = document.getElementById('img_pos').value || "images/placeholder.png";
+            dataObj.img_aim = document.getElementById('img_aim').value || "images/placeholder.png";
+            
+            if (isDouble) {
+                dataObj.img_aim2 = document.getElementById('img_aim2').value || "images/placeholder.png";
+            }
+            
+            dataObj.img_effect = document.getElementById('img_eff').value || "images/placeholder.png";
+
             const jsonStr = JSON.stringify(dataObj, null, 4);
-            // 加上逗号显示
             document.getElementById('resultCode').value = jsonStr + ",";
         }
 
         function copyToClipboard() {
             const copyText = document.getElementById("resultCode");
+            if (!copyText.value) return;
             copyText.select();
             document.execCommand("copy");
-            alert("代码已复制！现在去 data.js 粘贴吧。");
+            const tip = document.getElementById("copy-tip");
+            tip.style.opacity = "1";
+            setTimeout(() => { tip.style.opacity = "0"; }, 2000);
         }
     </script>
 </body>

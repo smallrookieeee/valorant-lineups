@@ -7,7 +7,11 @@
     <style>
         body { background-color: #0f1923; color: #ece8e1; }
         .detail-img-container { background-color: #1a1e22; border: 1px solid #333; }
-        .img-label { background: #ff4655; color: white; padding: 2px 10px; font-size: 12px; font-weight: bold; position: absolute; top: 0; left: 0; }
+        /* 标签样式统一管理 */
+        .img-label { color: white; padding: 2px 10px; font-size: 12px; font-weight: bold; position: absolute; top: 0; left: 0; z-index: 10; }
+        .bg-valorant-red { background-color: #ff4655; }
+        .bg-valorant-blue { background-color: #46b2ff; }
+        
         /* 底部导航按钮样式 */
         .nav-btn { background-color: #1f2326; border: 1px solid #333; transition: 0.3s; }
         .nav-btn:hover:not(:disabled) { background-color: #ff4655; border-color: #ff4655; color: white; }
@@ -20,22 +24,22 @@
         <button onclick="window.location.href='skill.html'" class="text-xs border border-gray-600 px-4 py-2 uppercase font-bold text-gray-400 hover:text-white transition">← 返回列表</button>
         
         <div class="flex gap-2">
-            <button id="prev-btn-top" class="nav-btn px-3 py-1 text-xs rounded">PREV</button>
-            <button id="next-btn-top" class="nav-btn px-3 py-1 text-xs rounded">NEXT</button>
+            <button id="prev-btn-top" class="nav-btn px-3 py-1 text-xs rounded font-bold">PREV</button>
+            <button id="next-btn-top" class="nav-btn px-3 py-1 text-xs rounded font-bold">NEXT</button>
         </div>
     </div>
 
     <div id="detail-content">
         </div>
 
-    <div class="flex justify-between mt-12 pt-6 border-t border-gray-800">
-        <button id="prev-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-start">
+    <div id="bottom-nav" class="flex justify-between mt-12 pt-6 border-t border-gray-800 hidden">
+        <button id="prev-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-start w-1/2 mr-2">
             <span class="text-[10px] opacity-50 uppercase">Previous Lineup</span>
-            <span id="prev-name">上一条</span>
+            <span id="prev-name" class="truncate w-full text-left">上一条</span>
         </button>
-        <button id="next-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-end">
+        <button id="next-btn-bottom" class="nav-btn px-6 py-3 rounded font-bold flex flex-col items-end w-1/2 ml-2">
             <span class="text-[10px] opacity-50 uppercase">Next Lineup</span>
-            <span id="next-name">下一条</span>
+            <span id="next-name" class="truncate w-full text-right">下一条</span>
         </button>
     </div>
 
@@ -45,12 +49,14 @@
         const heroName = sessionStorage.getItem('curHero');
         const skillIndex = parseInt(sessionStorage.getItem('curSkillIndex'));
         const content = document.getElementById('detail-content');
+        const bottomNav = document.getElementById('bottom-nav');
 
-        if (mapName && heroName && !isNaN(skillIndex)) {
+        if (!mapName || !heroName || isNaN(skillIndex)) {
+            alert("⚠️ 战术链路断开：请先从地图列表选择你要查看的点位！");
+            window.location.href = 'index.html';
+        } else {
             const map = data.maps.find(m => m.name === mapName);
             
-            // 1. 获取当前地图下所有的技能，并记录它们所属的英雄名
-            // 这样做是为了在切换时能跨英雄跳转
             let allSkillsInMap = [];
             map.heroes.forEach(hero => {
                 hero.skills.forEach((s, idx) => {
@@ -62,33 +68,68 @@
                 });
             });
 
-            // 2. 找到当前技能在全地图数组中的索引位置
             const currentFlatIndex = allSkillsInMap.findIndex(s => 
                 s.heroName === heroName && s.originalIndex === skillIndex
             );
 
             const s = allSkillsInMap[currentFlatIndex];
 
-            // 3. 渲染页面内容
-            content.innerHTML = `
-                <div class="mb-8 text-center md:text-left">
-                    <h1 class="text-3xl font-black italic uppercase text-white mb-2">${s.skill}</h1>
-                    <p class="text-red-500 font-bold text-sm tracking-widest">${s.heroName} · ${mapName} · ${s.side}</p>
-                </div>
+            // 统一图片交互样式
+            const imgClasses = "w-full h-auto block cursor-pointer hover:opacity-80 transition-opacity duration-300";
 
-                <div class="space-y-10">
-                    <div class="space-y-2">
-                        <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
-                            <span class="img-label">1. 站位 (POSITION)</span>
-                            <img src="${s.img_pos}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=POS+IMAGE+MISSING'">
+            // --- 核心智能判断：生成瞄准区域的 HTML ---
+            let aimSectionHTML = '';
+
+            if (s.type === '秒杀箭') {
+                // 如果是双杀阵，渲染两张图和两套参数
+                aimSectionHTML = `
+                    <div class="bg-[#1f2326]/50 p-4 rounded-lg border border-gray-800 shadow-inner space-y-8">
+                        <div class="space-y-3">
+                            <div class="detail-img-container relative rounded shadow-lg overflow-hidden mb-2 border-l-2 border-red-500">
+                                <span class="img-label bg-valorant-red">2-1. 第一箭 (FIRST DART)</span>
+                                <img src="${s.img_aim}" class="${imgClasses}" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x450/1a1e22/666?text=FIRST+DART+MISSING'">
+                            </div>
+                            <div class="flex gap-4 pl-2">
+                                <div class="bg-red-500/10 border border-red-500/50 px-3 py-1 rounded text-xs">
+                                    <span class="text-red-500 font-bold italic">POWER 1:</span> 
+                                    <span class="text-white ml-1 font-mono">${s.power || '0格蓄力'}</span>
+                                </div>
+                                <div class="bg-blue-500/10 border border-blue-500/50 px-3 py-1 rounded text-xs">
+                                    <span class="text-blue-500 font-bold italic">BOUNCE 1:</span> 
+                                    <span class="text-white ml-1 font-mono">${s.bounce || '0次反弹'}</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-400 pl-2 border-l-2 border-red-500/50">🎯 ${s.aim}</p>
                         </div>
-                        <p class="text-sm pl-2 border-l-2 border-gray-700">📍 ${s.pos}</p>
-                    </div>
 
+                        <hr class="border-gray-700/50 border-dashed">
+
+                        <div class="space-y-3">
+                            <div class="detail-img-container relative rounded shadow-lg overflow-hidden mb-2 border-l-2 border-blue-500">
+                                <span class="img-label bg-valorant-blue">2-2. 第二箭 (SECOND DART)</span>
+                                <img src="${s.img_aim2 || ''}" class="${imgClasses}" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x450/1a1e22/666?text=SECOND+DART+MISSING'">
+                            </div>
+                            <div class="flex gap-4 pl-2">
+                                <div class="bg-red-500/10 border border-red-500/50 px-3 py-1 rounded text-xs">
+                                    <span class="text-red-500 font-bold italic">POWER 2:</span> 
+                                    <span class="text-white ml-1 font-mono">${s.power2 || '0格蓄力'}</span>
+                                </div>
+                                <div class="bg-blue-500/10 border border-blue-500/50 px-3 py-1 rounded text-xs">
+                                    <span class="text-blue-500 font-bold italic">BOUNCE 2:</span> 
+                                    <span class="text-white ml-1 font-mono">${s.bounce2 || '0次反弹'}</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-400 pl-2 border-l-2 border-blue-500/50">🎯 ${s.aim2 || '无描述'}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 如果是普通技能 (探测箭等单图)，保持原样展示
+                aimSectionHTML = `
                     <div class="space-y-3">
                         <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
-                            <span class="img-label">2. 瞄准 (AIM)</span>
-                            <img src="${s.img_aim}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=AIM+IMAGE+MISSING'">
+                            <span class="img-label bg-valorant-red">2. 瞄准 (AIM)</span>
+                            <img src="${s.img_aim}" class="${imgClasses}" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x450/1a1e22/666?text=AIM+IMAGE+MISSING'">
                         </div>
                         <div class="flex gap-4 pl-2">
                             <div class="bg-red-500/10 border border-red-500/50 px-3 py-1 rounded text-xs">
@@ -97,23 +138,48 @@
                             </div>
                             <div class="bg-blue-500/10 border border-blue-500/50 px-3 py-1 rounded text-xs">
                                 <span class="text-blue-500 font-bold italic">BOUNCE:</span> 
-                                <span class="text-white ml-1 font-mono">${s.bounce || '0次'}</span>
+                                <span class="text-white ml-1 font-mono">${s.bounce || '0次反弹'}</span>
                             </div>
                         </div>
                         <p class="text-sm text-gray-400 pl-2 border-l-2 border-red-500/50">🎯 ${s.aim}</p>
                     </div>
+                `;
+            }
+
+            // 最终将所有内容拼装进网页
+            content.innerHTML = `
+                <div class="mb-8 text-center md:text-left">
+                    <h1 class="text-3xl font-black italic uppercase text-white mb-2">${s.skill}</h1>
+                    <div class="flex items-center justify-center md:justify-start gap-2">
+                        <span class="px-2 py-0.5 text-[10px] font-black uppercase ${s.side==='进攻' ? 'bg-red-500/20 text-red-500' : 'bg-blue-500/20 text-blue-500'}">${s.side}</span>
+                        <p class="text-gray-400 font-bold text-sm tracking-widest uppercase">${s.heroName} · ${mapName}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-10">
+                    <div class="space-y-2">
+                        <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
+                            <span class="img-label bg-valorant-red">1. 站位 (POSITION)</span>
+                            <img src="${s.img_pos}" class="${imgClasses}" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x450/1a1e22/666?text=POS+IMAGE+MISSING'">
+                        </div>
+                        <p class="text-sm pl-2 border-l-2 border-gray-700">📍 ${s.pos}</p>
+                    </div>
+
+                    ${aimSectionHTML}
 
                     <div class="space-y-2">
                         <div class="detail-img-container relative rounded shadow-2xl overflow-hidden mb-2">
-                            <span class="img-label">3. 效果 (EFFECT)</span>
-                            <img src="${s.img_effect}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x450/1a1e22/666?text=EFFECT+IMAGE+MISSING'">
+                            <span class="img-label bg-valorant-red">3. 效果 (EFFECT)</span>
+                            <img src="${s.img_effect}" class="${imgClasses}" onclick="window.open(this.src)" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x450/1a1e22/666?text=EFFECT+IMAGE+MISSING'">
                         </div>
                         <p class="text-sm pl-2 border-l-2 border-gray-700 italic">✨ ${s.effect}</p>
                     </div>
                 </div>
             `;
 
-            // 4. 设置切换按钮逻辑
+            bottomNav.classList.remove('hidden');
+
+            // 导航逻辑
             const setupNav = (btnId, targetIndex, nameId) => {
                 const btn = document.getElementById(btnId);
                 const nameEl = document.getElementById(nameId);
@@ -125,15 +191,14 @@
                     btn.onclick = () => {
                         sessionStorage.setItem('curHero', targetSkill.heroName);
                         sessionStorage.setItem('curSkillIndex', targetSkill.originalIndex);
-                        window.location.reload(); // 刷新页面加载新点位
+                        window.location.reload(); 
                     };
                 } else {
                     btn.disabled = true;
-                    if (nameEl) nameEl.innerText = "没有了";
+                    if (nameEl) nameEl.innerText = "已到尽头";
                 }
             };
 
-            // 应用到顶部和底部按钮
             setupNav('prev-btn-top', currentFlatIndex - 1);
             setupNav('next-btn-top', currentFlatIndex + 1);
             setupNav('prev-btn-bottom', currentFlatIndex - 1, 'prev-name');

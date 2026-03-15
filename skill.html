@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <title>点位列表 - 组合目录筛选</title>
+    <title>点位列表 - 动态组合筛选</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f1923; color: #ece8e1; }
@@ -18,122 +18,163 @@
         <h2 id="map-title" class="text-2xl font-black italic uppercase tracking-tighter text-white">Map Intel</h2>
     </div>
 
-    <div class="mb-8 flex flex-wrap gap-3 p-4 bg-black/20 rounded-sm border border-white/5">
+    <div id="filter-container" class="mb-8 flex flex-wrap items-center gap-3 p-4 bg-black/20 rounded-sm border border-white/5 hidden">
         <div class="w-full text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest text-white/50">多重筛选 / Multi-Filter</div>
         
-        <button data-group="side" onclick="toggleFilter('进攻', this)" class="filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white">进攻方</button>
-        <button data-group="side" onclick="toggleFilter('防守', this)" class="filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white">防守方</button>
+        <div id="filter-side-group" class="flex flex-wrap gap-2"></div>
         
-        <div class="w-px h-6 bg-gray-700 mx-1 hidden md:block"></div> 
+        <div id="filter-divider" class="w-px h-6 bg-gray-700 mx-1 hidden md:block"></div> 
 
-        <button data-group="type" onclick="toggleFilter('探测', this)" class="filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white">探测箭</button>
-        <button data-group="type" onclick="toggleFilter('电击', this)" class="filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white">电击箭</button>
-        <button data-group="type" onclick="toggleFilter('其他', this)" class="filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white">其他</button>
+        <div id="filter-type-group" class="flex flex-wrap gap-2"></div>
 
         <button onclick="resetFilters()" class="ml-auto text-gray-500 hover:text-white text-[10px] font-bold uppercase underline transition">重置筛选</button>
     </div>
 
     <div id="skill-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        </div>
+        <p id="loading-msg" class="col-span-full text-center text-gray-500 mt-10">正在载入战术数据...</p>
+    </div>
 
     <script src="data.js"></script>
     <script>
+        // 1. 获取缓存上下文并进行白屏拦截
         const mapName = sessionStorage.getItem('curMap');
         const list = document.getElementById('skill-list');
+        const loadingMsg = document.getElementById('loading-msg');
         const allCards = [];
 
-        // 用于存储当前的筛选状态
+        // 存储当前的筛选状态
         let activeFilters = {
-            side: null, // 存储选中的阵营
-            type: null  // 存储选中的类型
+            side: null,
+            type: null
         };
 
-        // 初始化渲染列表
-        if (mapName && typeof data !== 'undefined' && Array.isArray(data.maps)) {
+        // 拦截逻辑：如果没有选择地图就直接打开了这个页面，强制送回首页
+        if (!mapName) {
+            alert("⚠️ 战术链路断开：请先从首页选择一张地图！");
+            window.location.href = 'index.html';
+        } else if (typeof data !== 'undefined' && Array.isArray(data.maps)) {
+            
             const map = data.maps.find((m) => m.name === mapName);
-            document.getElementById('map-title').innerText = mapName;
+            if (!map) {
+                loadingMsg.innerText = "❌ 未在数据库中找到该地图情报。";
+            } else {
+                document.getElementById('map-title').innerText = mapName;
+                loadingMsg.remove(); // 移除加载提示
+                
+                // --- 核心新增：用于收集不重复分类的数据集合 (Set) ---
+                const uniqueSides = new Set();
+                const uniqueTypes = new Set();
 
-            map.heroes.forEach((hero) => {
-                hero.skills.forEach((skillItem, index) => {
-                    const card = document.createElement('div');
-                    
-                    // --- 新增：颜色区分逻辑 ---
-                    const isAttacker = skillItem.side === '进攻';
-                    // 进攻方用瓦红边框，防守方用青蓝边框
-                    const borderColor = isAttacker ? 'border-red-500' : 'border-blue-500';
-                    // 进攻方文字用红色，防守方用蓝色
-                    const tagTextColor = isAttacker ? 'text-red-400' : 'text-blue-500';
-                    
-                    card.className = `preview-card overflow-hidden shadow-lg border-b-4 ${borderColor} skill-node`;
-                    
-                    card.setAttribute('data-side', skillItem.side);
-                    card.setAttribute('data-type', skillItem.type);
+                // 2. 遍历生成点位卡片，同时收集所有的阵营和类型
+                map.heroes.forEach((hero) => {
+                    hero.skills.forEach((skillItem, index) => {
+                        // 收集数据（Set会自动去重，比如有5个探测箭，最后也只记录一个"探测"）
+                        if (skillItem.side) uniqueSides.add(skillItem.side);
+                        if (skillItem.type) uniqueTypes.add(skillItem.type);
 
-                    card.onclick = () => {
-                        sessionStorage.setItem('curHero', hero.name);
-                        sessionStorage.setItem('curSkillIndex', index);
-                        window.location.href = 'detail.html';
-                    };
+                        const card = document.createElement('div');
+                        
+                        const isAttacker = skillItem.side === '进攻';
+                        const borderColor = isAttacker ? 'border-red-500' : 'border-blue-500';
+                        const tagTextColor = isAttacker ? 'text-red-400' : 'text-blue-500';
+                        
+                        card.className = `preview-card overflow-hidden shadow-lg border-b-4 ${borderColor} skill-node`;
+                        card.setAttribute('data-side', skillItem.side);
+                        card.setAttribute('data-type', skillItem.type);
 
-                    card.innerHTML = `
-                        <div class="h-64 bg-black relative">
-                            <img src="${skillItem.img_effect}" class="w-full h-full object-cover opacity-80" onerror="this.src='https://via.placeholder.com/400x225/1a1e22/666?text=NO+IMAGE'">
-                            <span class="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${isAttacker ? 'bg-red-600/80' : 'bg-blue-600/80'} text-white">
-                                ${skillItem.side}
-                            </span>
-                        </div>
-                        <div class="p-3">
-                            <div class="text-[9px] text-gray-500 font-bold uppercase">${hero.name}</div>
-                            <div class="text-sm font-bold truncate text-white">${skillItem.skill}</div>
-                            <div class="mt-2 text-[10px] ${tagTextColor} font-bold uppercase tracking-widest">
-                                ${skillItem.side} | ${skillItem.type}
+                        card.onclick = () => {
+                            sessionStorage.setItem('curHero', hero.name);
+                            sessionStorage.setItem('curSkillIndex', index);
+                            window.location.href = 'detail.html';
+                        };
+
+                        card.innerHTML = `
+                            <div class="h-64 bg-black relative">
+                                <img src="${skillItem.img_effect}" class="w-full h-full object-cover opacity-80" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x225/1a1e22/666?text=NO+IMAGE'">
+                                <span class="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${isAttacker ? 'bg-red-600/80' : 'bg-blue-600/80'} text-white">
+                                    ${skillItem.side}
+                                </span>
                             </div>
-                        </div>
-                    `;
+                            <div class="p-3">
+                                <div class="text-[9px] text-gray-500 font-bold uppercase">${hero.name}</div>
+                                <div class="text-sm font-bold truncate text-white">${skillItem.skill}</div>
+                                <div class="mt-2 text-[10px] ${tagTextColor} font-bold uppercase tracking-widest">
+                                    ${skillItem.side} | ${skillItem.type}
+                                </div>
+                            </div>
+                        `;
 
-                    list.appendChild(card);
-                    allCards.push(card);
+                        list.appendChild(card);
+                        allCards.push(card);
+                    });
                 });
+
+                // 3. 根据收集到的集合，动态渲染按钮
+                renderDynamicFilters(uniqueSides, uniqueTypes);
+            }
+        }
+
+        /**
+         * 动态生成按钮的函数
+         */
+        function renderDynamicFilters(sides, types) {
+            const sideGroup = document.getElementById('filter-side-group');
+            const typeGroup = document.getElementById('filter-type-group');
+            const filterContainer = document.getElementById('filter-container');
+
+            // 生成阵营按钮 (如: 进攻, 防守)
+            sides.forEach(sideVal => {
+                const btn = document.createElement('button');
+                btn.className = "filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white";
+                btn.setAttribute('data-group', 'side');
+                // 让文案更好看点，加上“方”字
+                btn.innerText = (sideVal === '进攻' || sideVal === '防守') ? sideVal + "方" : sideVal;
+                btn.onclick = function() { toggleFilter(sideVal, this); };
+                sideGroup.appendChild(btn);
             });
+
+            // 生成技能类型按钮 (如: 探测, 电击, 烟雾)
+            types.forEach(typeVal => {
+                const btn = document.createElement('button');
+                btn.className = "filter-btn border border-gray-600 px-3 py-1 text-xs font-bold uppercase transition hover:border-white";
+                btn.setAttribute('data-group', 'type');
+                btn.innerText = typeVal;
+                btn.onclick = function() { toggleFilter(typeVal, this); };
+                typeGroup.appendChild(btn);
+            });
+
+            // 只有当存在分类数据时，才显示整个筛选工具栏
+            if (sides.size > 0 || types.size > 0) {
+                filterContainer.classList.remove('hidden');
+            } else {
+                document.getElementById('filter-divider').classList.add('hidden');
+            }
         }
 
         /**
          * 组合筛选逻辑
-         * @param {string} value - 筛选的值 (如 '进攻')
-         * @param {HTMLElement} btn - 点击的按钮元素
          */
         function toggleFilter(value, btn) {
-            const group = btn.getAttribute('data-group'); // 判断是哪个维度的按钮
-
-            // 1. 更新筛选状态：如果点的是已经选中的，则取消选择
+            const group = btn.getAttribute('data-group'); 
+            
             if (activeFilters[group] === value) {
                 activeFilters[group] = null;
                 btn.classList.remove('active');
             } else {
-                // 否则，先清除同组其他按钮的选中状态，再选中当前按钮
                 document.querySelectorAll(`.filter-btn[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
                 activeFilters[group] = value;
                 btn.classList.add('active');
             }
-
-            // 2. 执行联合筛选
             applyFilters();
         }
 
-        /**
-         * 应用筛选的核心逻辑 (且关系)
-         */
         function applyFilters() {
             allCards.forEach(card => {
                 const cardSide = card.getAttribute('data-side');
                 const cardType = card.getAttribute('data-type');
-
-                // 阵营匹配检查：如果未选阵营，默认通过；如果选了，则卡片属性必须等于选中值
                 const sideMatch = !activeFilters.side || cardSide === activeFilters.side;
-                // 类型匹配检查：原理同上
                 const typeMatch = !activeFilters.type || cardType === activeFilters.type;
 
-                // 只有两个维度都通过，卡片才显示
                 if (sideMatch && typeMatch) {
                     card.style.display = 'block';
                 } else {
@@ -142,9 +183,6 @@
             });
         }
 
-        /**
-         * 重置所有筛选
-         */
         function resetFilters() {
             activeFilters.side = null;
             activeFilters.type = null;
